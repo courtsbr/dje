@@ -55,7 +55,7 @@ dje_tjsp <- function(dates, path, verbose = FALSE) {
   f <- dplyr::failwith(tibble::tibble(result = 'erro'), download_arq)
   d <- expand.grid(date = dates, caderno = as.character(c(11:15, 18)),
                    KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE) %>%
-    tibble::tibble() %>%
+    tibble::as_tibble() %>%
     dplyr::arrange(date) %>%
     dplyr::mutate(date_link = format(as.Date(date), '%d/%m/%Y'),
                   link = sprintf('%sdtDiario=%s&cdCaderno=%s', u, date_link, caderno),
