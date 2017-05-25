@@ -66,5 +66,5 @@ dje2text <- function(files = NULL, path = NULL, ex_dir = 'dje_txt/', ...){
   files2conv %>%
     stringr::str_replace_all("\\.pdf$","\\.txt") %>%
     stringr::str_c(ex_dir, .) %>%
-    purrr::walk(~pdf2text(new_file = .x, ...))
+    purrr::walk2(files2conv, ~pdf2text(a = .y, new_file = .x, ...))
 }
