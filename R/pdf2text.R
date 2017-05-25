@@ -62,7 +62,7 @@ dje2text <- function(files = NULL, path = NULL, ex_dir = 'dje_txt/', ...){
     if(length(files2conv) == 0) stop("path is empty.")
   }
 
-  suppressWarnings(dir.create(ex_dir))
+  suppressWarnings(dir.create(sprintf("%s%s", ex_dir, dirname(files2conv))))
 
   files2conv %>%
     stringr::str_replace_all("\\.pdf$","\\.txt") %>%
