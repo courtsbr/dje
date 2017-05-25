@@ -54,7 +54,7 @@ dje2text <- function(files = NULL, path = NULL, ex_dir = 'dje_txt/', ...){
     files2conv <- a
   } else {
     if(!is.null(files)) cat("Using path over files.")
-    if(dir.exists(path)) stop("path does not exists.")
+    if(!dir.exists(path)) stop("path does not exists.")
 
     files2conv <- list.files(path, recursive = T)
 
