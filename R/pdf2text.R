@@ -63,7 +63,7 @@ dje2text <- function(files = NULL, path = NULL, ex_dir = 'dje_txt/', ...){
   }
 
   suppressWarnings(sprintf("%s%s", ex_dir, dirname(files2conv)) %>%
-                     dir.create(recursive = T))
+                    purrr::walk(dir.create, recursive = T))
 
   files2conv %>%
     stringr::str_replace_all("\\.pdf$","\\.txt") %>%
