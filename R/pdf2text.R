@@ -57,6 +57,7 @@ dje2text <- function(files = NULL, path = NULL, ex_dir = 'dje_txt/', ...){
     if(!dir.exists(path)) stop("path does not exists.")
 
     files2conv <- list.files(path, recursive = T)
+    files2conv_fn <- list.files(path, recursive = T, full.names = T)
 
     if(length(files2conv) == 0) stop("path is empty.")
   }
@@ -66,5 +67,5 @@ dje2text <- function(files = NULL, path = NULL, ex_dir = 'dje_txt/', ...){
   files2conv %>%
     stringr::str_replace_all("\\.pdf$","\\.txt") %>%
     stringr::str_c(ex_dir, .) %>%
-    purrr::walk2(files2conv, ~pdf2text(a = .y, new_file = .x, ...))
+    purrr::walk2(files2conv_fn, ~pdf2text(a = .y, new_file = .x, ...))
 }
