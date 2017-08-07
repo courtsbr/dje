@@ -1,19 +1,28 @@
 Package: dje
-Title: What the Package Does (one line, title case)
+Title: A scraper that downloads DJEs
 Version: 0.0.0.9000
 Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-Depends:
-    R (>= 3.3.1)
-License: MIT
+Description: A simple interface that allows you to download DJEs from Brazil's
+  multiple e-SAJ portals.
+Depends: R (>= 3.3.1)
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+Imports:
+  dplyr,
+  httr,
+  tibble,
+  stringr,
+  magrittr,
+  readr,
+  janitor,
+  lubridate,
+  purrr,
+  rvest,
+  stringi,
+  tidyr,
+  xml2
 Suggests:
-    testthat
-RoxygenNote: 5.0.1
-Imports: dplyr,
-    httr,
-    tibble,
-    stringr,
-    magrittr,
-    readr
+  testthat
+RoxygenNote: 6.0.1
+Roxygen: list(markdown = TRUE, roclets = c("rd", "namespace", "collate"))

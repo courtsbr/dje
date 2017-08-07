@@ -1,12 +1,12 @@
-context("esaj")
+context("dje")
 
 n_arqs <- tibble::tibble(
   tj = c('TJSP'),
   n_arqs = c(6)
 )
 
-expect_dje <- function(tj = 'TJSP', date = Sys.Date()) {
-  dje(tj = tj, dates = date, path = '.')
+expect_dje <- function(tj = 'TJSP', date = "2017-08-07") {
+  download_dje(tj = tj, dates = date, path = '.')
   path <- sprintf('%s_dje_%s', tolower(tj), date)
   arqs <- dir(path, full.names = TRUE)
   pdfs <- sapply(arqs, readr::read_lines, n_max = 1L)
