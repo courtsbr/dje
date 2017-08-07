@@ -2,4 +2,4 @@
 
 # dje
 
-Scraper de DJEs
+A simple interface that allows you to download DJEs from Brazil's multiple e-SAJ portals
