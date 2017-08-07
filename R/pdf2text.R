@@ -1,72 +1,90 @@
-#' Converts a pdf file to text
+#' Converts a PDF file to text (wraps a call to Poppler's `pdftotext` function)
 #'
-#' Wraps a call to poppler's pdftotext function.
+#' @param file Path to file
+#' @param new_file Path to file where to save converted text (not used if
+#' `return_text = TRUE`)
+#' @param start_pg Page where conversion should start (defaults to `NULL`,
+#' equivalent to first page)
+#' @param end_pg Page where conversion should end (defaults to `NULL`,
+#' equivalent to last page)
+#' @param raw Whether conversion should use Poppler's `-raw`
+#' @param return_text If `TRUE` this function will return the converted
+#' text as a character vector, and if `FALSE` (the default) it will
+#' return the path to a `.txt` file containing the converted text
 #'
-#'@param a pdf file to convert
-#'@param first_pg page where the convertion should start. defaults to NA, equivalent to 1.
-#'@param last_pg page where the convertion should end. defaults to NA, equivalent to the last page.
-#'@param r should the convertiong uses poppler's -raw?
-#'@param keep_file should we keep the file after convertion?
-#'@param return_string should this functions return a string?
-#'@param new_file name of the output file
+#' @return A character vector either with the converted text or with
+#' the path to the new file
 #'
 #' @export
-pdf2text <- function(a, first_pg = NA, last_pg = NA, r = F, keep_file = T,
-                     return_string = F, new_file = 'repo.txt'){
+pdf_to_text <- function(file, new_file = NULL, start_pg = NULL,
+                     end_pg = NULL, raw = FALSE, return_text = FALSE) {
 
-  if(!file.exists(a))stop(sprintf("Coudn't find %s.", a))
+  # Check if file is all good
+  if (!file.exists(file)) { stop(paste("Coudn't find", file)) }
+  if (!stringr::str_detect(file, '.pdf')) { stop(paste(file, "isn't a PDF")) }
 
-  if(stringi::stri_detect(a,fixed = '.pdf')){
-    sprintf('pdftotext %s %s%s%s%s',
-            a,
-            ifelse(r,'-raw ',' '),
-            ifelse(!is.na(first_pg),paste('-f',first_pg,''),' '),
-            ifelse(!is.na(last_pg),paste('-l',last_pg,''),' '),
-            new_file) %>%
-      system()
-    if(!keep_file){file.remove(new_file)}
-    if(return_string){
-      texto = readr::read_file(new_file)
-      return(texto)
-    }
+  # Create name of new file if necessary
+  new_file <- ifelse(
+    is.null(new_file),
+    stringr::str_replace(file, ".pdf$", ".txt"),
+    normalizePath(new_file, mustWork = FALSE))
+
+  # Generate command
+  command <- stringr::str_c(
+    "pdftotext", file, ifelse(raw, "-raw", ""),
+    ifelse(!is.null(start_pg), paste("-f", start_pg), ""),
+    ifelse(!is.null(end_pg), paste("-l", end_pg), ""),
+    new_file, sep = " ")
+
+  # Run command
+  system(command)
+
+  # Remove file if necessary
+  if (return_text) {
+    out = readr::read_file(new_file)
+    file.remove(new_file)
   } else {
-    stop(sprintf("%s should be a pdf file.", a))
+    out <- normalizePath(new_file)
   }
+
+  return(out)
 }
 
-#' Converts a list of dje pdf files to text
+#' Converts a directory of DJE PDFs to text (using [pdf_to_text()])
 #'
-#'@param files list of files to convert. defaults to NULL, when path should be used.
-#'@param path directory containing pdf files (and only them) to convert. works with folders.
-#'@param ex_dir folder to save the files
-#'@param ... other param passed to pdf2text
+#' @param path Path to directory containing files to be converted
+#' @param new_path Path to directory where to save converted files (defaults
+#' to `NULL`, simply appending "_txt" to `path`)
+#' @param ... Parameters passed on to [pdf_to_text()]
 #'
-#'@export
-dje2text <- function(files = NULL, path = NULL, ex_dir = 'dje_txt/', ...){
+#' @return A character vector with the paths the new files
+#'
+#' @seealso [pdf_to_text()]
+#'
+#' @export
+dje_to_text <- function(path = ".", new_path = NULL, ...){
 
-  #troubleshooting
-  if(is.null(path)){
-    if(is.null(a))stop("files and path are null.")
+  # Check if directory is all good
+  if (!dir.exists(path)) { stop(paste("Coudn't find", path)) }
+  if (length(list.files(path)) == 0) { stop(paste(path, "is empty")) }
 
-    if(any(!file.exists(a))){
-      stop("All files should exist.")
-    }
-    files2conv <- a
-  } else {
-    if(!is.null(files)) cat("Using path over files.")
-    if(!dir.exists(path)) stop("path does not exists.")
+  # Create name of new directory if necessary
+  new_path <- ifelse(
+    is.null(new_path),
+    stringr::str_c(normalizePath(path), "_txt"),
+    normalizePath(new_path, mustWork = FALSE))
 
-    files2conv <- list.files(path, recursive = T)
-    files2conv_fn <- list.files(path, recursive = T, full.names = T)
+  # Gather files to convert and new files to create
+  files <- path %>%
+    list.files(recursive = TRUE, full.names = TRUE) %>%
+    normalizePath()
+  new_files <- files %>%
+    stringr::str_replace(normalizePath(path), new_path) %>%
+    stringr::str_replace(".pdf$", ".txt")
 
-    if(length(files2conv) == 0) stop("path is empty.")
-  }
+  # Create new directory mirroring old one
+  purrr::walk(dirname(new_files), dir.create,
+              recursive = TRUE, showWarnings = FALSE)
 
-  suppressWarnings(sprintf("%s%s", ex_dir, dirname(files2conv)) %>%
-                    purrr::walk(dir.create, recursive = T))
-
-  files2conv %>%
-    stringr::str_replace_all("\\.pdf$","\\.txt") %>%
-    stringr::str_c(ex_dir, .) %>%
-    purrr::walk2(files2conv_fn, ~pdf2text(a = .y, new_file = .x, ...))
+  return(purrr::map2_chr(files, new_files, pdf_to_text, ...))
 }
