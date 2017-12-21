@@ -18,7 +18,7 @@ get_dje_data <- function(tj) {
       booklets = c(1:2)),
     "tjms" = list(
       u_dje = "http://www.tjms.jus.br/cdje/downloadCaderno.do?",
-      booklets = c(1)),
+      booklets = c(1:4)),
     "tjrn" = list(
       u_dje = "https://www.diario.tjrn.jus.br/djonline/pages/edicao/edicaoVisualizadorTopo.jsf",
       booklets = c(1:2)),
