@@ -21,12 +21,12 @@ break_text <- function(text_chr, patterns){
 #' @export
 remove_header <- function(text_chr, header_regex = header_style()){
   first_pattern <- stringr::str_extract(text_chr, header_regex)
-  clean_text <- stringr::str_replace_all(texto, first_pattern, "")
+  clean_text <- stringr::str_replace_all(text_chr, first_pattern, "")
 }
 
 #' @export
 remove_footer <- function(text_chr, footer_regex = footer_style()){
-  clean_text <- stringr::str_replace_all(texto, footer_regex, "")
+  clean_text <- stringr::str_replace_all(text_chr, footer_regex, "")
 }
 
 #' @export
