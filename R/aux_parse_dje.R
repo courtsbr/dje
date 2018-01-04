@@ -21,6 +21,12 @@ break_text <- function(text_chr, patterns){
 #' @export
 remove_header <- function(text_chr, header_regex = header_style()){
   first_pattern <- stringr::str_extract(text_chr, header_regex)
+
+  if(is.na(first_pattern)){
+    message("Could not find any headers.")
+    return(text_chr)
+  }
+
   clean_text <- stringr::str_replace_all(text_chr, first_pattern, "")
 }
 
