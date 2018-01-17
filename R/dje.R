@@ -47,6 +47,7 @@
 #' @export
 download_dje <- function(tj, dates = Sys.Date(), path = '.', verbose = FALSE) {
 
+  dir.create(path, showWarnings = FALSE, recursive = TRUE)
   # Collect TJ-specific data
   tj <- stringr::str_to_lower(tj)
   u_dje <- get_dje_data(tj)$u_dje
