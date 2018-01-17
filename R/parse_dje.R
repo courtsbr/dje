@@ -45,6 +45,7 @@ parse_dje_tjsp <- function(text_file) {
   txt <- readr::read_file(text_file)
   cnj_format_sp <- stringr::regex("[0-9]{7}\\-[0-9]{2}\\.[0-9]{4}\\.8\\.26\\.[0-9]{4}")
   clean_text <- paste0(txt, "@fim_do_texto@")
+
   classify_content <- function(raw_content) {
     dplyr::case_when(
       stringr::str_detect(raw_content, "Distribuidor") ~ "D",
@@ -146,7 +147,9 @@ parse_dje_tjsp <- function(text_file) {
 
   inner_breaks <- purrr::map2(seq_along(breaks$classe), breaks$valor, cut_text) %>%
     unlist() %>%
-    stringr::str_split(pattern = paste0("(?=PROCESSO ?:", cnj_format_sp, ")"))
+    stringr::str_split(pattern = stringr::regex(paste0("(?=PROCESSO ?:",
+                                                       cnj_format_sp, ")"),
+                                                ignore_case = TRUE))
 
   d <- breaks %>%
     tidyr::unnest(valor) %>%
