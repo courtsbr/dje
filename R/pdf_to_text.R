@@ -76,7 +76,7 @@ dje_to_text <- function(path = ".", new_path = NULL, ...){
 
   # Gather files to convert and new files to create
   files <- path %>%
-    list.files(recursive = TRUE, full.names = TRUE) %>%
+    dir(recursive = TRUE, full.names = TRUE) %>%
     normalizePath()
   new_files <- files %>%
     stringr::str_replace(normalizePath(path), new_path) %>%
