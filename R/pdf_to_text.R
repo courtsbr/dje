@@ -37,7 +37,7 @@ pdf_to_text <- function(file, new_file = NULL, start_pg = NULL,
     new_file, sep = " ")
 
   # Run command
-  system(command)
+  res <- system(command, intern = TRUE, ignore.stdout = TRUE, ignore.stderr = TRUE)
 
   # Remove file if necessary
   if (return_text) {
@@ -86,5 +86,8 @@ dje_to_text <- function(path = ".", new_path = NULL, ...){
   purrr::walk(dirname(new_files), dir.create,
               recursive = TRUE, showWarnings = FALSE)
 
-  return(purrr::map2_chr(files, new_files, pdf_to_text, ...))
+  # Parallel mcmapply
+  out <- parallel::mcmapply(pdf_to_text, files, new_files, ...)
+
+  return(out)
 }
