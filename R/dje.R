@@ -48,6 +48,7 @@
 download_dje <- function(tj, dates = Sys.Date(), path = '.', verbose = FALSE) {
 
   dir.create(path, showWarnings = FALSE, recursive = TRUE)
+
   # Collect TJ-specific data
   tj <- stringr::str_to_lower(tj)
   u_dje <- get_dje_data(tj)$u_dje
@@ -58,9 +59,9 @@ download_dje <- function(tj, dates = Sys.Date(), path = '.', verbose = FALSE) {
   rep_paths <- rep(paths, each = length(booklets))
 
   # Create folders
-  invisible(purrr::map(paths, dir.create, showWarnings = FALSE))
+  purrr::walk(paths, dir.create, showWarnings = FALSE)
 
-  # Download files
+  # Prepare output
   results <- expand.grid(date = dates, booklet = booklets) %>%
     dplyr::tbl_df() %>%
     dplyr::arrange(date) %>%
@@ -68,10 +69,17 @@ download_dje <- function(tj, dates = Sys.Date(), path = '.', verbose = FALSE) {
       date_link = format(lubridate::as_date(date), "%d/%m/%Y"),
       link = purrr::map2_chr(date, booklet, ~get_dje_link(tj, .x, u_dje, .y)),
       file = stringr::str_c(rep_paths, "/", tj, "_", booklet, "_", date, ".pdf")) %>%
-    dplyr::arrange(desc(date)) %>%
-    dplyr::group_by(date, booklet, date_link, link, file) %>%
-    dplyr::do(download_pdf(.$link, .$file, verbose)) %>%
-    dplyr::ungroup() %>%
+    dplyr::arrange(desc(date))
+
+  # Iterate over downloads
+  res <- parallel::mcmapply(
+    download_pdf, results$link, results$file, MoreArgs = list(verbose = verbose),
+    SIMPLIFY = FALSE, USE.NAMES = FALSE) %>%
+    dplyr::bind_rows()
+
+  # Finalize
+  results <- results %>%
+    dplyr::bind_cols(res) %>%
     dplyr::select(date, booklet, link, file, result)
 
   return(results)
@@ -108,8 +116,12 @@ download_pdf <- function(u_dje, file, verbose) {
       ifelse(is.null(.), "application", .)
 
     # Return OK
-    if (r$status_code == 200 && stringr::str_detect(ct, "application")) {
-      return(dplyr::data_frame(result = "OK"))
+    if (r$status_code == 200) {
+      if (stringr::str_detect(ct, "application")) {
+        return(dplyr::data_frame(result = "OK"))
+      } else {
+        return(dplyr::data_frame(result = "EMPTY"))
+      }
     }
   }, {
 
