@@ -44,7 +44,12 @@ parse_dje_tjsp <- function(text_file) {
   #   remove_footer()
   txt <- readr::read_file(text_file)
   cnj_format_sp <- stringr::regex("[0-9]{7}\\-[0-9]{2}\\.[0-9]{4}\\.8\\.26\\.[0-9]{4}")
-  clean_text <- paste0(txt, "@fim_do_texto@")
+  clean_text <- stringr::str_remove_all(txt, "Publica\u00e7\u00e3o Oficial do Tribunal de Justi\u00e7a do Estado de S\u00E3o Paulo - Lei Federal n\u00ba 11.419/06, art. 4\u00ba\n") %>%
+    stringr::str_remove_all("Disponibiliza\u00e7\u00e3o: [a-z\u00e7]+-feira, [0-9]+ de [a-z]+ de 201[0-9]\n\nDi\u00e1rio da Justi\u00e7a Eletr\u00f4nico - Caderno Judicial - [0-9]\u00aa Inst\u00e2ncia - Interior - Parte I\n\nS\u00E3o Paulo, Ano XI - Edi\u00e7\u00e3o [0-9]+") %>%
+    stringr::str_remove_all("[\\´]") %>%
+    stringr::str_remove_all("[\u000C]") %>%
+    stringr::str_remove_all("[\\']") %>%
+    paste0("@fim_do_texto@")
 
   classify_content <- function(raw_content) {
     dplyr::case_when(
@@ -58,7 +63,7 @@ parse_dje_tjsp <- function(text_file) {
     stringr::str_split("SUM\u00c1RIO|\n") %>%
     dplyr::first() %>%
     stringr::str_trim() %>%
-    stringr::str_subset("^[XVI ]+-|F\u00f3rum|^[\u00c7A-Z\u00c3\u00c2\u00c1\u00cd\u00d3\u00da\u00c9\u00ca -]+$|Vara|Anexo|Distribuidor|Juizado|Fiscais|Criminal|C\u00edvel") %>%
+    stringr::str_subset("^[XVI ]+-|F\u00f3rum|^[\u00c7A-Z\u00c3\u00c2\u00c1\u00cd\u00d3\u00da\u00c9\u00ca -]+$|Vara|Anexo|Distribuidor|Juizado|Fiscais|Criminal|C\u00edvel|Col\u00E9gio|J\u00FAri|Inf\u00E2ncia|Execu\u00E7\u00F5es|Centro") %>%
     tibble::as.tibble() %>%
     purrr::set_names("valor") %>%
     dplyr::mutate(tipo = classify_content(valor))
@@ -68,17 +73,30 @@ parse_dje_tjsp <- function(text_file) {
       tab2 <- tibble::tibble(valor = ifelse(is.na(y), "@fim_do_texto@", y))
       x <- dplyr::bind_rows(x, tab2)
     } else {
-      x
+      return(x)
     }
   }
 
+  #Gera a tabela com várias infos faltando
+  # breaks <- index %>%
+  #   dplyr::filter((tipo == "D") |
+  #                   (dplyr::lag(tipo) == "D") |
+  #                   (tipo == "C" & dplyr::lead(tipo) != "C")) %>%
+  #   dplyr::filter(is.na(dplyr::lead(tipo)) |
+  #                   !(tipo == "C" & dplyr::lead(tipo) == "C")) %>%
+  #   dplyr::mutate(classe = ifelse(tipo == "C" & !is.na(dplyr::lead(tipo)),
+  #                                 valor, NA),
+  #                 valor = paste0("\n", valor, "\n")) %>%
+  #   tidyr::fill(classe) %>%
+  #   dplyr::mutate(classe = paste0("\n", classe, "\n")) %>%
+  #   dplyr::select(classe, valor) %>%
+  #   dplyr::group_by(classe) %>%
+  #   tidyr::nest(.key = "valor") %>%
+  #   dplyr::mutate(valor = purrr::map2(valor, dplyr::lead(classe), clean_breaks))
+
+  #Provável solução
   breaks <- index %>%
-    dplyr::filter((tipo == "D") |
-                    (dplyr::lag(tipo) == "D") |
-                    (tipo == "C" & dplyr::lead(tipo) != "C")) %>%
-    dplyr::filter(is.na(dplyr::lead(tipo)) |
-                    !(tipo == "C" & dplyr::lead(tipo) == "C")) %>%
-    dplyr::mutate(classe = ifelse(tipo == "C" & !is.na(dplyr::lead(tipo)),
+    dplyr::mutate(classe = ifelse(tipo == "C" & !is.na(dplyr::lead(tipo)),  #
                                   valor, NA),
                   valor = paste0("\n", valor, "\n")) %>%
     tidyr::fill(classe) %>%
@@ -87,6 +105,7 @@ parse_dje_tjsp <- function(text_file) {
     dplyr::group_by(classe) %>%
     tidyr::nest(.key = "valor") %>%
     dplyr::mutate(valor = purrr::map2(valor, dplyr::lead(classe), clean_breaks))
+  breaks <- breaks[3:95,] #Remove as duas primeiras infos -> melhorar isso
 
   breaks_counties <- clean_text %>%
     break_text(breaks$classe) %>%
@@ -114,6 +133,9 @@ parse_dje_tjsp <- function(text_file) {
     } else {
       distribuidor <- which(stringr::str_detect(y$valor, "Distribuidor"))
       r <- character(length(distribuidor))
+      if(length(distribuidor) == 0){ #Desconsidera as cidades sem distribuidor
+        return()
+      }
       for(i in 1:length(distribuidor)) {
         if(i == 1){
           points <- text %>%
