@@ -77,26 +77,13 @@ parse_dje_tjsp <- function(text_file) {
     }
   }
 
-  #Gera a tabela com várias infos faltando
-  # breaks <- index %>%
-  #   dplyr::filter((tipo == "D") |
-  #                   (dplyr::lag(tipo) == "D") |
-  #                   (tipo == "C" & dplyr::lead(tipo) != "C")) %>%
-  #   dplyr::filter(is.na(dplyr::lead(tipo)) |
-  #                   !(tipo == "C" & dplyr::lead(tipo) == "C")) %>%
-  #   dplyr::mutate(classe = ifelse(tipo == "C" & !is.na(dplyr::lead(tipo)),
-  #                                 valor, NA),
-  #                 valor = paste0("\n", valor, "\n")) %>%
-  #   tidyr::fill(classe) %>%
-  #   dplyr::mutate(classe = paste0("\n", classe, "\n")) %>%
-  #   dplyr::select(classe, valor) %>%
-  #   dplyr::group_by(classe) %>%
-  #   tidyr::nest(.key = "valor") %>%
-  #   dplyr::mutate(valor = purrr::map2(valor, dplyr::lead(classe), clean_breaks))
-
-  #Provável solução
   breaks <- index %>%
-    dplyr::mutate(classe = ifelse(tipo == "C" & !is.na(dplyr::lead(tipo)),  #
+    dplyr::filter((tipo == "D") |
+                    (dplyr::lag(tipo) == "D") |
+                    (tipo == "C" & dplyr::lead(tipo) != "C")) %>%
+    dplyr::filter(is.na(dplyr::lead(tipo)) |
+                    !(tipo == "C" & dplyr::lead(tipo) == "C")) %>%
+    dplyr::mutate(classe = ifelse(tipo == "C" & !is.na(dplyr::lead(tipo)),
                                   valor, NA),
                   valor = paste0("\n", valor, "\n")) %>%
     tidyr::fill(classe) %>%
@@ -105,7 +92,6 @@ parse_dje_tjsp <- function(text_file) {
     dplyr::group_by(classe) %>%
     tidyr::nest(.key = "valor") %>%
     dplyr::mutate(valor = purrr::map2(valor, dplyr::lead(classe), clean_breaks))
-  breaks <- breaks[3:95,] #Remove as duas primeiras infos -> melhorar isso
 
   breaks_counties <- clean_text %>%
     break_text(breaks$classe) %>%
@@ -133,9 +119,6 @@ parse_dje_tjsp <- function(text_file) {
     } else {
       distribuidor <- which(stringr::str_detect(y$valor, "Distribuidor"))
       r <- character(length(distribuidor))
-      if(length(distribuidor) == 0){ #Desconsidera as cidades sem distribuidor
-        return()
-      }
       for(i in 1:length(distribuidor)) {
         if(i == 1){
           points <- text %>%
@@ -163,7 +146,7 @@ parse_dje_tjsp <- function(text_file) {
       #
       # c(stringr::str_sub(text, points1[1], points1[2]),
       #   stringr::str_sub(stringr::str_sub(text, lim_inf, -1), points2[1], points2[2]))
-      r
+      return(r)
     }
   }
 
