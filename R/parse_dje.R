@@ -45,7 +45,9 @@ parse_dje_tjsp <- function(text_file) {
   txt <- readr::read_file(text_file)
   cnj_format_sp <- stringr::regex("[0-9]{7}\\-[0-9]{2}\\.[0-9]{4}\\.8\\.26\\.[0-9]{4}")
   clean_text <- stringr::str_remove_all(txt, "Publica\u00e7\u00e3o Oficial do Tribunal de Justi\u00e7a do Estado de S\u00E3o Paulo - Lei Federal n\u00ba 11.419/06, art. 4\u00ba\n") %>%
-    stringr::str_remove_all("Disponibiliza\u00e7\u00e3o: [a-z\u00e7]+-feira, [0-9]+ de [a-z]+ de 201[0-9]\n\nDi\u00e1rio da Justi\u00e7a Eletr\u00f4nico - Caderno Judicial - [0-9]\u00aa Inst\u00e2ncia - Interior - Parte I\n\nS\u00E3o Paulo, Ano XI - Edi\u00e7\u00e3o [0-9]+") %>%
+    stringr::str_remove_all("Disponibiliza\u00e7\u00e3o: [a-z\u00e7]+-feira, [0-9]+ de [a-z]+ de 201[0-9] ") %>%
+    stringr::str_remove_all("Di\u00e1rio da Justi\u00e7a Eletr\u00f4nico - Caderno Judicial - [0-9]\u00aa Inst\u00e2ncia - Interior - Parte I ") %>%
+    stringr::str_remove_all("S\u00E3o Paulo, Ano XI - Edi\u00e7\u00e3o [0-9]+ [0-9]\n") %>%
     stringr::str_remove_all("[\\´]") %>%
     stringr::str_remove_all("[\u000C]") %>%
     stringr::str_remove_all("[\\']") %>%
@@ -63,10 +65,13 @@ parse_dje_tjsp <- function(text_file) {
     stringr::str_split("SUM\u00c1RIO|\n") %>%
     dplyr::first() %>%
     stringr::str_trim() %>%
-    stringr::str_subset("^[XVI ]+-|F\u00f3rum|^[\u00c7A-Z\u00c3\u00c2\u00c1\u00cd\u00d3\u00da\u00c9\u00ca -]+$|Vara|Anexo|Distribuidor|Juizado|Fiscais|Criminal|C\u00edvel|Col\u00E9gio|J\u00FAri|Inf\u00E2ncia|Execu\u00E7\u00F5es|Centro") %>%
+    stringr::str_subset("^[XVI ]+-|F\u00f3rum|^[\u00c7A-Z\u00c3\u00c2\u00c1\u00cd\u00d3\u00da\u00c9\u00ca [0-9] -]+$|Vara|Anexo|Distribuidor|Juizado|Fiscais|Criminal|C\u00edvel|Col\u00E9gio|J\u00FAri|Inf\u00E2ncia|Execu\u00E7\u00F5es|Centro") %>%
+    stringr::str_remove("[ 0-9]+$") %>%
     tibble::as.tibble() %>%
     purrr::set_names("valor") %>%
     dplyr::mutate(tipo = classify_content(valor))
+
+  # index <- purrr::map2(index,)
 
   clean_breaks <- function(x, y) {
     if (stringr::str_detect(x[[1]][length(x[[1]])], "Distribuidor")) {
@@ -162,4 +167,6 @@ parse_dje_tjsp <- function(text_file) {
     dplyr::mutate(processos = inner_breaks) %>%
     tidyr::unnest(processos)
   d
+
+  # readr::write_csv(d, "/home/nathalia/Desktop/Processos_dje/tabela.csv" )
 }
