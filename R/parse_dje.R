@@ -48,6 +48,8 @@ parse_dje_tjsp <- function(text_file) {
     stringr::str_remove_all("Disponibiliza\u00e7\u00e3o: [a-z\u00e7]+-feira, [0-9]+ de [a-z]+ de 201[0-9] ") %>%
     stringr::str_remove_all("Di\u00e1rio da Justi\u00e7a Eletr\u00f4nico - Caderno Judicial - [0-9]\u00aa Inst\u00e2ncia - Interior - Parte I ") %>%
     stringr::str_remove_all("S\u00E3o Paulo, Ano XI - Edi\u00e7\u00e3o [0-9]+ [0-9]\n") %>%
+    stringr::str_remove_all("RELA\u00c7\u00c3O DOS FEITOS .+\n") %>%
+    stringr::str_remove_all("RELA\u00c7\u00c3O DE CARTAS .+\n") %>%
     stringr::str_remove_all("[\\´]") %>%
     stringr::str_remove_all("[\u000C]") %>%
     stringr::str_remove_all("[\\']") %>%
@@ -70,8 +72,6 @@ parse_dje_tjsp <- function(text_file) {
     tibble::as.tibble() %>%
     purrr::set_names("valor") %>%
     dplyr::mutate(tipo = classify_content(valor))
-
-  # index <- purrr::map2(index,)
 
   clean_breaks <- function(x, y) {
     if (stringr::str_detect(x[[1]][length(x[[1]])], "Distribuidor")) {
@@ -165,8 +165,10 @@ parse_dje_tjsp <- function(text_file) {
     tidyr::unnest(valor) %>%
     dplyr::filter(stringr::str_detect(valor, "Distribuidor"))  %>%
     dplyr::mutate(processos = inner_breaks) %>%
-    tidyr::unnest(processos)
+    tidyr::unnest(processos) %>%
+    dplyr::filter(stringr::str_detect(processos,"PROCESSO"))
+
   d
 
-  # readr::write_csv(d, "/home/nathalia/Desktop/Processos_dje/tabela.csv" )
+  readr::write_csv(d, "/home/nathalia/Desktop/Processos_dje/processos_tjsp_18_2017-10-02.csv" )
 }
