@@ -46,7 +46,7 @@ parse_dje_tjsp <- function(text_file) {
   cnj_format_sp <- stringr::regex("[0-9]{7}\\-[0-9]{2}\\.[0-9]{4}\\.8\\.26\\.[0-9]{4}")
   clean_text <- stringr::str_remove_all(txt, "Publica\u00e7\u00e3o Oficial do Tribunal de Justi\u00e7a do Estado de S\u00E3o Paulo - Lei Federal n\u00ba 11.419/06, art. 4\u00ba\n") %>%
     stringr::str_remove_all("Disponibiliza\u00e7\u00e3o: [a-z\u00e7]+-feira, [0-9]+ de [a-z]+ de 201[0-9] ") %>%
-    stringr::str_remove_all("Di\u00e1rio da Justi\u00e7a Eletr\u00f4nico - Caderno Judicial - [0-9]\u00aa Inst\u00e2ncia - Interior - Parte I ") %>%
+    stringr::str_remove_all("Di\u00e1rio da Justi\u00e7a Eletr\u00f4nico - Caderno Judicial .+") %>%
     stringr::str_remove_all("S\u00E3o Paulo, Ano XI - Edi\u00e7\u00e3o [0-9]+ [0-9]\n") %>%
     stringr::str_remove_all("RELA\u00c7\u00c3O DOS FEITOS .+\n") %>%
     stringr::str_remove_all("RELA\u00c7\u00c3O DE CARTAS .+\n") %>%
@@ -67,7 +67,7 @@ parse_dje_tjsp <- function(text_file) {
     stringr::str_split("SUM\u00c1RIO|\n") %>%
     dplyr::first() %>%
     stringr::str_trim() %>%
-    stringr::str_subset("^[XVI ]+-|F\u00f3rum|^[\u00c7A-Z\u00c3\u00c2\u00c1\u00cd\u00d3\u00da\u00c9\u00ca [0-9] -]+$|Vara|Anexo|Distribuidor|Juizado|Fiscais|Criminal|C\u00edvel|Col\u00E9gio|J\u00FAri|Inf\u00E2ncia|Execu\u00E7\u00F5es|Centro") %>%
+    stringr::str_subset("^[XVI ]+-|F\u00f3rum|^[\u00c7A-Z\u00c3\u00c2\u00c1\u00cd\u00d3\u00da\u00c9\u00ca [0-9] -]+$|Vara|Anexo|Distribuidor|Juizado|Fiscais|Criminal|C\u00edvel|Col\u00E9gio|J\u00FAri|Inf\u00E2ncia|Execu\u00E7\u00F5es|Centro|Peti\uE7\u00F5es|DEECRIM|Fam\u00EDlia") %>%
     stringr::str_remove("[ 0-9]+$") %>%
     tibble::as.tibble() %>%
     purrr::set_names("valor") %>%
@@ -113,7 +113,7 @@ parse_dje_tjsp <- function(text_file) {
                          breaks_counties[x + 1] + nchar(breaks_counties[x + 1]) - 1)
     }
 
-    # print(y$valor[1])
+    # print(length(y$valor))
     if(length(y$valor) == 3) {
       lim_inf <- text %>%
         break_text(y$valor[2])
@@ -170,5 +170,5 @@ parse_dje_tjsp <- function(text_file) {
 
   d
 
-  readr::write_csv(d, "/home/nathalia/Desktop/Processos_dje/processos_tjsp_18_2017-10-02.csv" )
+  # readr::write_csv(d, "/home/nathalia/Desktop/Processos_dje/processos.csv" )
 }
