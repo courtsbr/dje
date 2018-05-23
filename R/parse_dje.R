@@ -49,7 +49,8 @@ parse_dje_tjsp <- function(text_file) {
     stringr::str_remove_all("Di\u00e1rio da Justi\u00e7a Eletr\u00f4nico - Caderno Judicial .+") %>%
     stringr::str_remove_all("S\u00E3o Paulo, Ano XI - Edi\u00e7\u00e3o [0-9]+ [0-9]\n") %>%
     stringr::str_remove_all("RELA\u00c7\u00c3O DOS FEITOS .+\n") %>%
-    stringr::str_remove_all("RELA\u00c7\u00c3O DE CARTAS [[:alpha:] \n]* [0-9]{2}\u002F[0-9]{2}\u002F[0-9]{4}") %>%
+    stringr::str_remove_all("RELAÇÃO DE CARTAS .+\n") %>%
+    stringr::str_remove_all("[A-Z\u0020]*[0-9]{2}\u002F[0-9]{2}\u002F[0-9]{4}\n") %>%
     stringr::str_remove_all("[\\´]") %>%
     stringr::str_remove_all("[\u000C]") %>%
     stringr::str_remove_all("[\\']") %>%
@@ -171,5 +172,5 @@ parse_dje_tjsp <- function(text_file) {
 
   d
 
-  # readr::write_csv(d, "/home/nathalia/Desktop/Processos_dje/processos18.csv" )
+  # readr::write_csv(d, "/home/nathalia/Desktop/Processos_dje/processos.csv" )
 }
