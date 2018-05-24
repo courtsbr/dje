@@ -48,12 +48,10 @@ parse_dje_tjsp <- function(text_file) {
     stringr::str_remove_all("Disponibiliza\u00e7\u00e3o: [a-z\u00e7]+-feira, [0-9]+ de [a-z]+ de 201[0-9] ") %>%
     stringr::str_remove_all("Di\u00e1rio da Justi\u00e7a Eletr\u00f4nico - Caderno Judicial .+") %>%
     stringr::str_remove_all("S\u00E3o Paulo, Ano XI - Edi\u00e7\u00e3o [0-9]+ [0-9]\n") %>%
-    stringr::str_remove_all("RELA\u00c7\u00c3O DOS FEITOS .+\n") %>%
-    stringr::str_remove_all("RELAÇÃO DE CARTAS .+\n") %>%
+    stringr::str_remove_all("RELA\u00c7\u00c3O DOS FEITOS .+\\n?[A-Z\u0020]*[0-9]{2}\u002F[0-9]{2}\u002F[0-9]{4}") %>%
+    stringr::str_remove_all("RELA\u00c7\u00c3O DE CARTAS .+\\n?[A-Z\u0020]*[0-9]{2}\u002F[0-9]{2}\u002F[0-9]{4}") %>%
     stringr::str_remove_all("[A-Z\u0020]*[0-9]{2}\u002F[0-9]{2}\u002F[0-9]{4}\n") %>%
-    stringr::str_remove_all("[\\´]") %>%
-    stringr::str_remove_all("[\u000C]") %>%
-    stringr::str_remove_all("[\\']") %>%
+    stringr::str_remove_all("[\\´\u000C\\']") %>%
     paste0("@fim_do_texto@")
 
   classify_content <- function(raw_content) {
@@ -166,11 +164,10 @@ parse_dje_tjsp <- function(text_file) {
     tidyr::unnest(valor) %>%
     dplyr::filter(stringr::str_detect(valor, "Distribuidor"))  %>%
     dplyr::mutate(processos = inner_breaks) %>%
-    tidyr::unnest(processos) %>%
-    dplyr::filter(stringr::str_detect(processos,"PROCESSO")) %>%
-    dplyr::filter(stringr::str_length(processos) < 500)
+    tidyr::unnest(processos)
+    # dplyr::filter(stringr::str_detect(processos,"PROCESSO")) %>%
+    # dplyr::filter(stringr::str_length(processos) < 500)
 
   d
-
-  # readr::write_csv(d, "/home/nathalia/Desktop/Processos_dje/processos.csv" )
 }
+
