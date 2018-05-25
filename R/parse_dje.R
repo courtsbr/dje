@@ -82,14 +82,9 @@ parse_dje_tjsp <- function(text_file) {
   }
 
   breaks <- index %>%
-    dplyr::filter((tipo == "D") |
-                    (dplyr::lag(tipo) == "D") |
-                    (tipo == "C" & dplyr::lead(tipo) != "C")) %>%
-    dplyr::filter(is.na(dplyr::lead(tipo)) |
-                    !(tipo == "C" & dplyr::lead(tipo) == "C")) %>%
-    dplyr::mutate(classe = ifelse(tipo == "C" & !is.na(dplyr::lead(tipo)),
-                                  valor, NA),
-                  valor = paste0("\n", valor, "\n")) %>%
+    dplyr::filter((tipo == "D") | (dplyr::lag(tipo) == "D") | (tipo == "C" & dplyr::lead(tipo) != "C")) %>%
+    dplyr::filter(is.na(dplyr::lead(tipo)) | !(tipo == "C" & dplyr::lead(tipo) == "C")) %>%
+    dplyr::mutate(classe = ifelse(tipo == "C" & !is.na(dplyr::lead(tipo)), valor, NA), valor = paste0("\n", valor, "\n")) %>%
     tidyr::fill(classe) %>%
     dplyr::mutate(classe = paste0("\n", classe, "\n")) %>%
     dplyr::select(classe, valor) %>%
@@ -133,6 +128,7 @@ parse_dje_tjsp <- function(text_file) {
             break_text(y$valor[distribuidor[i]])
           points <- text %>%
             stringr::str_sub(lim_inf, -1) %>%
+            stringr::str_c("\n") %>%
             break_text(y$valor[distribuidor[i]:(distribuidor[i]+1)])
           r[i] <- stringr::str_sub(stringr::str_sub(text, lim_inf, -1),
                                    points[1], points[2])
@@ -164,8 +160,8 @@ parse_dje_tjsp <- function(text_file) {
     tidyr::unnest(valor) %>%
     dplyr::filter(stringr::str_detect(valor, "Distribuidor"))  %>%
     dplyr::mutate(processos = inner_breaks) %>%
-    tidyr::unnest(processos)
-    # dplyr::filter(stringr::str_detect(processos,"PROCESSO")) %>%
+    tidyr::unnest(processos) %>%
+    dplyr::filter(stringr::str_detect(processos,"PROCESSO"))
     # dplyr::filter(stringr::str_length(processos) < 500)
 
   d
