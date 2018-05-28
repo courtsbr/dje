@@ -1,47 +1,69 @@
 parse_dje_tjms <- function(text_file){
+
   txt <- readr::read_file(text_file)
 
+
+
   clean_text <- txt %>%
+
     remove_header() %>%
+
     remove_footer()
 
+
+
   sumario <- clean_text %>%
+
     find_index() %>%
+
     stringr::str_split("(SUM\u00c1RIO|\b)\n") %>%
+
     dplyr::first() %>%
+
     stringr::str_subset("Juizado|Vara") %>%
+
     stringr::str_trim()
 
+
+
   courts <- sumario %>%
+
     paste0("\n", ., "\n") %>%
+
     break_text(clean_text, .) %>%
+
     append(-1)
 
+
+
   d <- purrr::map(1:(length(courts)-1),
+
                   ~stringr::str_sub(clean_text, courts[.x], courts[.x+1])) %>%
+
     purrr::map(~break_chunk(.x) %>%
+
                  dplyr::first() %>%
+
                  purrr::map_df(parse_docket_entry)) %>%
+
     purrr::map2(names(courts)[-length(courts)],
+
                 ~dplyr::mutate(.x, location = .y)) %>%
+
     dplyr::bind_rows() %>%
+
     dplyr::filter(stringr::str_detect(lawsuit_id, "Processo"))
+
 }
 
-
 #' Parse DJE file
-#'
 #' parse TJSP file obtained from [dje_to_text()].
-#'
 #' @param text_file path of the file to parse.
-#'
 #' @return tibble containing lawsuit and court information
 #' @export
-parse_dje_tjsp <- function(text_file) {
 
-  # clean_text <- text_file %>%
-  #   remove_header() %>%
-  #   remove_footer()
+parse_dje_tjsp <- function(text_file) {
+  text_file = "/home/giovanni/Desktop/dje/tjsp_dje_2017-10-02_txt/tjsp_18_2017-10-02.txt"
   txt <- readr::read_file(text_file)
   cnj_format_sp <- stringr::regex("[0-9]{7}\\-[0-9]{2}\\.[0-9]{4}\\.8\\.26\\.[0-9]{4}")
   clean_text <- stringr::str_remove_all(txt, "Publica\u00e7\u00e3o Oficial do Tribunal de Justi\u00e7a do Estado de S\u00E3o Paulo - Lei Federal n\u00ba 11.419/06, art. 4\u00ba\n") %>%
@@ -83,31 +105,32 @@ parse_dje_tjsp <- function(text_file) {
 
   breaks <- index %>%
     dplyr::filter((tipo == "D") | (dplyr::lag(tipo) == "D") | (tipo == "C" & dplyr::lead(tipo) != "C")) %>%
-    dplyr::filter(is.na(dplyr::lead(tipo)) | !(tipo == "C" & dplyr::lead(tipo) == "C")) %>%
+    dplyr::filter(is.na(dplyr::lead(tipo)) | !(tipo == "C" & dplyr::lead(tipo) == "C") | stringr::str_to_upper(valor) == valor) %>%
     dplyr::mutate(classe = ifelse(tipo == "C" & !is.na(dplyr::lead(tipo)), valor, NA), valor = paste0("\n", valor, "\n")) %>%
     tidyr::fill(classe) %>%
     dplyr::mutate(classe = paste0("\n", classe, "\n")) %>%
     dplyr::select(classe, valor) %>%
     dplyr::group_by(classe) %>%
     tidyr::nest(.key = "valor") %>%
-    dplyr::mutate(valor = purrr::map2(valor, dplyr::lead(classe), clean_breaks))
+    dplyr::mutate(valor = purrr::map2(valor, dplyr::lead(classe), clean_breaks)) %>%
+    dplyr::rowwise() %>%
+    dplyr::filter(nrow(valor) > 1) %>%
+    dplyr::ungroup()
 
   breaks_counties <- clean_text %>%
     break_text(breaks$classe) %>%
     append(-1)
 
   cut_text <- function(x, y) {
-
     if (breaks_counties[x+1] == -1){
       text <- clean_text %>%
         stringr::str_sub(breaks_counties[x], breaks_counties[x+1])
     } else {
       text <- clean_text %>%
         stringr::str_sub(breaks_counties[x],
-                         breaks_counties[x + 1] + nchar(breaks_counties[x + 1]) - 1)
+                         breaks_counties[x + 1] + nchar(names(breaks_counties[x + 1])) - 1)
     }
 
-    # print(length(y$valor))
     if(length(y$valor) == 3) {
       lim_inf <- text %>%
         break_text(y$valor[2])
@@ -131,30 +154,17 @@ parse_dje_tjsp <- function(text_file) {
             stringr::str_c("\n") %>%
             break_text(y$valor[distribuidor[i]:(distribuidor[i]+1)])
           r[i] <- stringr::str_sub(stringr::str_sub(text, lim_inf, -1),
-                                   points[1], points[2])
+                                 points[1], points[2])
         }
       }
-      # points1 <- text %>%
-      #   break_text(y$valor[distribuidor[1]:(distribuidor[1]+1)])
-      #
-      # lim_inf <- text %>%
-      #   break_text(y$valor[distribuidor[2]])
-      #
-      # points2 <- text %>%
-      #   stringr::str_sub(lim_inf, -1) %>%
-      #   break_text(y$valor[distribuidor[2]:(distribuidor[2]+1)])
-      #
-      # c(stringr::str_sub(text, points1[1], points1[2]),
-      #   stringr::str_sub(stringr::str_sub(text, lim_inf, -1), points2[1], points2[2]))
       return(r)
     }
   }
 
   inner_breaks <- purrr::map2(seq_along(breaks$classe), breaks$valor, cut_text) %>%
     unlist() %>%
-    stringr::str_split(pattern = stringr::regex(paste0("(?=PROCESSO ?:(\u0020)*",
-                                                       cnj_format_sp, ")"),
-                                                ignore_case = TRUE))
+    stringr::str_split(pattern = stringr::regex(paste0("(?=PROCESSO ?:(\u0020)*", cnj_format_sp, ")"), ignore_case = TRUE)) %>%
+    purrr::map(~stringr::str_split(.x, pattern = "(?=\nPROCESSO\n)") %>% rlang::squash_chr())  # RAW DANDO ERRADO
 
   d <- breaks %>%
     tidyr::unnest(valor) %>%
@@ -162,8 +172,6 @@ parse_dje_tjsp <- function(text_file) {
     dplyr::mutate(processos = inner_breaks) %>%
     tidyr::unnest(processos) %>%
     dplyr::filter(stringr::str_detect(processos,"PROCESSO"))
-    # dplyr::filter(stringr::str_length(processos) < 500)
 
-  d
+  readr::write_csv(d, "/home/giovanni/Desktop/dje/tjsp_dje_2017-10-02_txt/d2.csv")
 }
-
