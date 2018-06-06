@@ -1,59 +1,30 @@
 parse_dje_tjms <- function(text_file){
-
   txt <- readr::read_file(text_file)
-
-
-
   clean_text <- txt %>%
-
     remove_header() %>%
-
     remove_footer()
 
-
-
   sumario <- clean_text %>%
-
     find_index() %>%
-
     stringr::str_split("(SUM\u00c1RIO|\b)\n") %>%
-
     dplyr::first() %>%
-
     stringr::str_subset("Juizado|Vara") %>%
-
     stringr::str_trim()
 
-
-
   courts <- sumario %>%
-
     paste0("\n", ., "\n") %>%
-
     break_text(clean_text, .) %>%
-
     append(-1)
 
-
-
   d <- purrr::map(1:(length(courts)-1),
-
                   ~stringr::str_sub(clean_text, courts[.x], courts[.x+1])) %>%
-
     purrr::map(~break_chunk(.x) %>%
-
                  dplyr::first() %>%
-
                  purrr::map_df(parse_docket_entry)) %>%
-
     purrr::map2(names(courts)[-length(courts)],
-
                 ~dplyr::mutate(.x, location = .y)) %>%
-
     dplyr::bind_rows() %>%
-
     dplyr::filter(stringr::str_detect(lawsuit_id, "Processo"))
-
 }
 
 #' Parse DJE file
@@ -63,20 +34,22 @@ parse_dje_tjms <- function(text_file){
 #' @export
 
 parse_dje_tjsp <- function(text_file) {
-  text_file = "/home/giovanni/Desktop/dje/tjsp_dje_2017-10-02_txt/tjsp_18_2017-10-02.txt"
+
+
   txt <- readr::read_file(text_file)
-  cnj_format_sp <- stringr::regex("[0-9]{7}\\-[0-9]{2}\\.[0-9]{4}\\.8\\.26\\.[0-9]{4}")
+  cnj_format_sp <- stringr::regex("[0-9]{7}\\-[0-9]{2}\\.[0-9]{4}\\.[0-9]{1}\\.[0-9]{2}\\.[0-9]{4}")
   clean_text <- stringr::str_remove_all(txt, "Publica\u00e7\u00e3o Oficial do Tribunal de Justi\u00e7a do Estado de S\u00E3o Paulo - Lei Federal n\u00ba 11.419/06, art. 4\u00ba\n") %>%
     stringr::str_remove_all("Disponibiliza\u00e7\u00e3o: [a-z\u00e7]+-feira, [0-9]+ de [a-z]+ de 201[0-9] ") %>%
     stringr::str_remove_all("Di\u00e1rio da Justi\u00e7a Eletr\u00f4nico - Caderno Judicial .+") %>%
     stringr::str_remove_all("S\u00E3o Paulo, Ano XI - Edi\u00e7\u00e3o [0-9]+ [0-9]\n") %>%
     stringr::str_remove_all("RELA\u00c7\u00c3O DOS FEITOS .+\\n?[A-Z\u0020]*[0-9]{2}\u002F[0-9]{2}\u002F[0-9]{4}") %>%
-    stringr::str_remove_all("RELA\u00c7\u00c3O DE CARTAS .+\\n?[A-Z\u0020]*[0-9]{2}\u002F[0-9]{2}\u002F[0-9]{4}") %>%
-    stringr::str_remove_all("[A-Z\u0020]*[0-9]{2}\u002F[0-9]{2}\u002F[0-9]{4}\n") %>%
+    stringr::str_remove_all("RELA\u00c7\u00c3O DE CARTAS .+\\n?[A-Z\u0020]*[[0-9]{2}\u002F[0-9]{2}\u002F[0-9]{4}\n]*") %>%
+    stringr::str_remove_all("[A-Z\u0020\u00c7\u00c3\u00c2\u00c1\u00cd\u00d3\u00da\u00c9\u00ca]*[0-9]{2}\u002F[0-9]{2}\u002F[0-9]{4}\n") %>%
+    stringr::str_remove_all("[\u005f\u00e0]*") %>%
     stringr::str_remove_all("[\\´\u000C\\']") %>%
     paste0("@fim_do_texto@")
 
-  classify_content <- function(raw_content) {
+   classify_content <- function(raw_content) {
     dplyr::case_when(
       stringr::str_detect(raw_content, "Distribuidor") ~ "D",
       stringr::str_detect(raw_content, "[XVI ]+-|F\u00f3rum|^[\u00c7A-Z\u00c3\u00c2\u00c1\u00cd\u00d3\u00da\u00c9\u00ca ]+$") ~ "C",
@@ -106,7 +79,7 @@ parse_dje_tjsp <- function(text_file) {
   breaks <- index %>%
     dplyr::filter((tipo == "D") | (dplyr::lag(tipo) == "D") | (tipo == "C" & dplyr::lead(tipo) != "C")) %>%
     dplyr::filter(is.na(dplyr::lead(tipo)) | !(tipo == "C" & dplyr::lead(tipo) == "C") | stringr::str_to_upper(valor) == valor) %>%
-    dplyr::mutate(classe = ifelse(tipo == "C" & !is.na(dplyr::lead(tipo)), valor, NA), valor = paste0("\n", valor, "\n")) %>%
+    dplyr::mutate(classe = ifelse(tipo == "C", valor, NA), valor = paste0("\n", valor, "\n")) %>%
     tidyr::fill(classe) %>%
     dplyr::mutate(classe = paste0("\n", classe, "\n")) %>%
     dplyr::select(classe, valor) %>%
@@ -163,7 +136,7 @@ parse_dje_tjsp <- function(text_file) {
 
   inner_breaks <- purrr::map2(seq_along(breaks$classe), breaks$valor, cut_text) %>%
     unlist() %>%
-    stringr::str_split(pattern = stringr::regex(paste0("(?=PROCESSO ?:(\u0020)*", cnj_format_sp, ")"), ignore_case = TRUE)) %>%
+    stringr::str_split(pattern = stringr::regex(paste0("(?=PROCESSO[\u0020]*:(\u0020)*", cnj_format_sp, ")"), ignore_case = TRUE)) %>%
     purrr::map(~stringr::str_split(.x, pattern = "(?=\nPROCESSO\n)") %>% rlang::squash_chr())  # RAW DANDO ERRADO
 
   d <- breaks %>%
@@ -173,5 +146,4 @@ parse_dje_tjsp <- function(text_file) {
     tidyr::unnest(processos) %>%
     dplyr::filter(stringr::str_detect(processos,"PROCESSO"))
 
-  readr::write_csv(d, "/home/giovanni/Desktop/dje/tjsp_dje_2017-10-02_txt/d2.csv")
 }

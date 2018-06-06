@@ -17,7 +17,7 @@
 #'
 #' @export
 pdf_to_text <- function(file, new_file = NULL, start_pg = NULL,
-                     end_pg = NULL, raw = FALSE, return_text = FALSE) {
+                     end_pg = NULL, raw = TRUE, return_text = FALSE) {
 
   # Check if file is all good
   if (!file.exists(file)) { stop(paste("Coudn't find", file)) }
