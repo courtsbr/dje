@@ -35,7 +35,6 @@ parse_dje_tjms <- function(text_file){
 
 parse_dje_tjsp <- function(text_file) {
 
-
   txt <- readr::read_file(text_file)
   cnj_format_sp <- stringr::regex("[0-9]{7}\\-[0-9]{2}\\.[0-9]{4}\\.[0-9]{1}\\.[0-9]{2}\\.[0-9]{4}")
   clean_text <- stringr::str_remove_all(txt, "Publica\u00e7\u00e3o Oficial do Tribunal de Justi\u00e7a do Estado de S\u00E3o Paulo - Lei Federal n\u00ba 11.419/06, art. 4\u00ba\n") %>%
@@ -43,16 +42,17 @@ parse_dje_tjsp <- function(text_file) {
     stringr::str_remove_all("Di\u00e1rio da Justi\u00e7a Eletr\u00f4nico - Caderno Judicial .+") %>%
     stringr::str_remove_all("S\u00E3o Paulo, Ano XI - Edi\u00e7\u00e3o [0-9]+ [0-9]\n") %>%
     stringr::str_remove_all("RELA\u00c7\u00c3O DOS FEITOS .+\\n?[A-Z\u0020]*[0-9]{2}\u002F[0-9]{2}\u002F[0-9]{4}") %>%
-    stringr::str_remove_all("RELA\u00c7\u00c3O DE CARTAS .+\\n?[A-Z\u0020]*[[0-9]{2}\u002F[0-9]{2}\u002F[0-9]{4}\n]*") %>%
+    stringr::str_remove_all("RELA\u00c7\u00c3O DE CARTAS .+\\n?[A-Z\u0020]*[0-9]{2}\u002F[0-9]{2}\u002F[0-9]{4}") %>%
     stringr::str_remove_all("[A-Z\u0020\u00c7\u00c3\u00c2\u00c1\u00cd\u00d3\u00da\u00c9\u00ca]*[0-9]{2}\u002F[0-9]{2}\u002F[0-9]{4}\n") %>%
     stringr::str_remove_all("[\u005f\u00e0]*") %>%
     stringr::str_remove_all("[\\´\u000C\\']") %>%
     paste0("@fim_do_texto@")
 
-   classify_content <- function(raw_content) {
+  classify_content <- function(raw_content) {
     dplyr::case_when(
       stringr::str_detect(raw_content, "Distribuidor") ~ "D",
-      stringr::str_detect(raw_content, "[XVI ]+-|F\u00f3rum|^[\u00c7A-Z\u00c3\u00c2\u00c1\u00cd\u00d3\u00da\u00c9\u00ca ]+$") ~ "C",
+      stringr::str_detect(raw_content, "DEECRIM") ~ "Outros",
+      stringr::str_detect(raw_content, "[XVI ]+-|F\u00f3rum|^[\u002D\u00c7A-Z\u00c3\u00c2\u00c1\u00cd\u00d3\u00da\u00c9\u00ca ]+$") ~ "C",
       TRUE ~ "Outros")
   }
 
@@ -61,7 +61,7 @@ parse_dje_tjsp <- function(text_file) {
     stringr::str_split("SUM\u00c1RIO|\n") %>%
     dplyr::first() %>%
     stringr::str_trim() %>%
-    stringr::str_subset("^[XVI ]+-|F\u00f3rum|^[\u00c7A-Z\u00c3\u00c2\u00c1\u00cd\u00d3\u00da\u00c9\u00ca [0-9] -]+$|Vara|Anexo|Distribuidor|Juizado|Fiscais|Criminal|C\u00edvel|Col\u00E9gio|J\u00FAri|Inf\u00E2ncia|Execu\u00E7\u00F5es|Centro|Peti\uE7\u00F5es|DEECRIM|Fam\u00EDlia") %>%
+    stringr::str_subset("^[XVI ]+-|F\u00f3rum|^[\u002D\u00c7A-Z\u00c3\u00c2\u00c1\u00cd\u00d3\u00da\u00c9\u00ca [0-9] -]+$|Vara|Anexo|Distribuidor|Juizado|Fiscais|Criminal|C\u00edvel|Col\u00E9gio|J\u00FAri|Inf\u00E2ncia|Execu\u00E7\u00F5es|Centro|Peti\uE7\u00F5es|DEECRIM|Fam\u00EDlia") %>%
     stringr::str_remove("[ 0-9]+$") %>%
     tibble::as.tibble() %>%
     purrr::set_names("valor") %>%
@@ -145,5 +145,7 @@ parse_dje_tjsp <- function(text_file) {
     dplyr::mutate(processos = inner_breaks) %>%
     tidyr::unnest(processos) %>%
     dplyr::filter(stringr::str_detect(processos,"PROCESSO"))
+
+  return(d)
 
 }
