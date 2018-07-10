@@ -3,6 +3,7 @@
 export("%>%")
 export(dje_to_text)
 export(download_dje)
+export(download_skeleton_dje)
 export(parse_dje_tjsp)
 export(pdf_to_text)
 importFrom(magrittr,"%>%")
